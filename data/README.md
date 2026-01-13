@@ -1,13 +1,18 @@
 ## 📊 Data
+The dataset used in this project is a processed and transformed version of publicly available data originally provided by the Chilean Ministry of Health (Ministerio de Salud de Chile – MINSAL).
 
-The dataset contains epidemiological records of foodborne disease outbreaks, aggregated by epidemiological week.
+The original data was cleaned, aggregated, and reformatted to improve usability for statistical analysis and modeling. The processed dataset does not reflect the official format published by MINSAL.
 
-Each row represents a reported outbreak and includes temporal, geographic, clinical, and operational variables related to the event.
+Each row represents an epidemiological record of a foodborne disease outbreak, aggregated by epidemiological week.
 
 ### Structure
 - **Observations:** 1,137 records  
 - **Variables:** 58 features  
 - **Time span:** From 2017 onward (weekly aggregation)
+
+### Data Source
+- Original data source: Ministerio de Salud de Chile (MINSAL)  
+- This dataset corresponds to a modified version and does not represent the official format published by MINSAL.
 
 ### Main Variable Groups
 
@@ -31,16 +36,11 @@ Each row represents a reported outbreak and includes temporal, geographic, clini
 - Age-group specific medical attention variables  
 
 **Clinical symptoms**
-- Binary or count variables for symptoms such as:
-  - Nausea, vomiting, diarrhea  
-  - Abdominal pain  
-  - Fever, dehydration, hypotension  
-  - Neurological and muscular symptoms  
+- Binary or count variables for symptoms such as nausea, vomiting, diarrhea, abdominal pain, fever, dehydration, hypotension, and neurological or muscular symptoms  
 
 **Food and contamination factors**
 - `Grupo Alimento Sospechoso`: Suspected food group  
-- `local de elaboración`: Food preparation location  
-- `local consumo`: Consumption location  
+- Food preparation and consumption locations  
 - Contributing factors related to contamination, survival, and proliferation  
 
 **Diagnosis and outcome**
@@ -52,4 +52,4 @@ Each row represents a reported outbreak and includes temporal, geographic, clini
 ### Notes
 - The dataset has been cleaned and reformatted for analytical purposes.
 - Categorical variables are encoded numerically.
-- The data structure allows both descriptive analysis and predictive modeling focused on outbreak severity and risk assessment.
+- The dataset enables descriptive analysis, statistical modeling, and risk assessment applications.
