@@ -8,7 +8,7 @@ The academic version includes formal theoretical background, methodological just
 
 ## Contents
 
-- `tesis.pdf`: Original undergraduate thesis submitted for the completion of the Bachelor's degree in Mathematics.
+- `Tesis_KO_Bsc.pdf`: Original undergraduate thesis submitted for the completion of the Bachelor's degree in Mathematics.
 
 ## Note
 
