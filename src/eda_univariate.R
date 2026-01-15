@@ -51,7 +51,19 @@ plot_factor_hist <- function(data, var_index, breaks, xlim = NULL) {
   )
 }
 
+# Tabla resumen de las variables factores
 
+factor_summary <- function(data, var_index){
+
+  freq_abs <- table(data[, var_index])
+  freq_rel <- prop.table(freq_abs)
+
+  data.frame(
+    Nivel = names(freq_abs),
+    Frecuencia = as.numeric(freq_abs),
+    Proporcion = round(as.numeric(freq_rel), 3)
+  )
+}
 
 # funcion para caja de boxplots
 plot_box_block <- function(data, indices, nrow = 2, ncol = 2) {
