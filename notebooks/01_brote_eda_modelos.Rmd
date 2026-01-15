@@ -21,23 +21,12 @@ alimentos, utilizando datos previamente modificados con fines académicos.
 rm(list = ls())
 
 # Cargar datos
-datos <- read.table(
-  "../data/data modificada 5 sem.csv",
-  sep = ";",
-  header = TRUE,
-  fileEncoding = "latin1",
-  check.names = FALSE
-)
+source("src/load_data.R")
 
-# Normalizar nombres de columnas
-colnames(datos) <- make.names(colnames(datos))
+data_list <- cargar_datos("data/data modificada 5 sem1.csv")
 
-# Convertir a matriz numérica
-dato1 <- data.matrix(datos)
-vari <- colnames(datos)
-
-# Dimensiones del conjunto de datos
-dim(dato1)
+dato1 <- data_list$dato1
+vari  <- data_list$variables
 ```
 
 ---
