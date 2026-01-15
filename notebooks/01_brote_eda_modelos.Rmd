@@ -1,0 +1,168 @@
+---
+title: "Análisis estadístico de brotes alimentarios"
+author: "Keily Oropeza"
+output: html_document
+---
+
+## 1. Introducción
+
+Este documento presenta una versión resumida y reproducible del análisis
+estadístico desarrollado en mi tesis de grado en Matemática (mención Estadística
+y Aplicadas).  
+El estudio se centra en el análisis de brotes de enfermedades transmitidas por
+alimentos, utilizando datos previamente modificados con fines académicos.
+
+---
+
+## 2. Carga y preparación de los datos
+
+```{r}
+# Limpiar entorno
+rm(list = ls())
+
+# Cargar datos
+datos <- read.table(
+  "../data/data modificada 5 sem.csv",
+  sep = ";",
+  header = TRUE,
+  fileEncoding = "latin1",
+  check.names = FALSE
+)
+
+# Normalizar nombres de columnas
+colnames(datos) <- make.names(colnames(datos))
+
+# Convertir a matriz numérica
+dato1 <- data.matrix(datos)
+vari <- colnames(datos)
+
+# Dimensiones del conjunto de datos
+dim(dato1)
+```
+
+---
+
+## 3. Análisis exploratorio univariado
+
+A continuación se presentan algunas visualizaciones descriptivas de variables
+seleccionadas, con el fin de identificar patrones iniciales.
+
+```{r}
+par(mfrow = c(1, 2))
+
+# Síntomas (variables binarias)
+hist(dato1[, 29], main = "Náuseas", xlab = "Presencia")
+hist(dato1[, 30], main = "Vómitos", xlab = "Presencia")
+```
+
+```{r}
+# Variable de interés principal
+boxplot(dato1[, 8], main = "Distribución del número de enfermos",
+        ylab = "Enfermos")
+```
+
+---
+
+## 4. Estadística descriptiva
+
+Se calculan medidas resumen para las variables analizadas.
+
+```{r}
+summary(dato1)
+
+# Medias por variable
+apply(dato1, 2, mean)
+```
+
+---
+
+## 5. Análisis multivariado: correlación
+
+```{r}
+# Matriz de correlación
+cor_mat <- cor(dato1)
+
+# Correlaciones más altas (excluyendo la diagonal)
+cor_values <- cor_mat[upper.tri(cor_mat)]
+sort(abs(cor_values), decreasing = TRUE)[1:10]
+```
+
+---
+
+## 6. Modelo lineal generalizado (Poisson)
+
+Se ajusta un modelo Poisson para explicar el número de enfermos en función
+de las demás variables, excluyendo aquellas no pertinentes para el análisis.
+
+```{r}
+dato_df <- data.frame(dato1)
+
+modelo_poisson <- glm(
+  Enfermos ~ . - Año.estadistico - Fallecidos - Tasa.Letalidad,
+  data = dato_df,
+  family = poisson
+)
+
+summary(modelo_poisson)
+```
+
+---
+
+## 7. Regularización: LASSO Poisson
+
+Se emplea regularización LASSO para la selección de variables relevantes.
+
+```{r}
+library(glmnet)
+
+# Matriz de diseño
+x <- model.matrix(Enfermos ~ ., dato_df)
+y <- dato_df$Enfermos
+
+# Validación cruzada
+cv_lasso <- cv.glmnet(
+  x,
+  y,
+  family = "poisson",
+  alpha = 1
+)
+
+# Mejor lambda
+cv_lasso$lambda.min
+```
+
+```{r}
+# Coeficientes seleccionados por LASSO
+coef(cv_lasso, s = "lambda.min")
+```
+
+---
+
+## 8. Análisis de componentes principales (PCA)
+
+Como herramienta exploratoria adicional, se realiza un PCA sobre las variables
+explicativas.
+
+```{r}
+# Excluir variable respuesta
+pca <- prcomp(dato1[, -8], scale. = TRUE)
+
+summary(pca)
+```
+
+```{r}
+plot(pca, main = "Scree plot")
+biplot(pca)
+```
+
+---
+
+## 9. Conclusiones
+
+El análisis exploratorio permitió identificar patrones relevantes en la
+distribución de síntomas y variables asociadas a los brotes alimentarios.
+
+El modelo Poisson y la regularización LASSO evidencian que un subconjunto reducido
+de variables explica gran parte de la variabilidad observada en el número de
+enfermos, destacando la utilidad de técnicas de selección de variables en
+problemas reales de salud pública.
