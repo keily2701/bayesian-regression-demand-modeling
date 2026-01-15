@@ -37,11 +37,25 @@ A continuación se presentan algunas visualizaciones descriptivas de variables
 seleccionadas, con el fin de identificar patrones iniciales.
 
 ```{r}
-par(mfrow = c(1, 2))
+# Variables binarias
+indices_sintomas <- c(29:44)
+indices_otras    <- c(6, 55, 56)
+indices_binarias <- c( indices_sintomas,indices_otras)
 
-# Síntomas (variables binarias)
-hist(dato1[, 29], main = "Náuseas", xlab = "Presencia")
-hist(dato1[, 30], main = "Vómitos", xlab = "Presencia")
+par(mfrow = c(3, 3))
+for (i in indices_sintomas) {
+  plot_binary_hist(dato1, i)
+}
+
+par(mfrow = c(1, 3))
+
+for (i in indices_otras) {
+  plot_binary_hist(dato1, i)
+}
+
+# Tabla resumen
+binary_summary(dato1, indices_binarias)
+
 ```
 
 ```{r}
