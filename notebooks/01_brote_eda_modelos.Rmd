@@ -4,7 +4,7 @@ author: "Keily Oropeza"
 output: html_document
 ---
 
-## 1. Introducción
+## Introducción
 
 Este documento presenta una versión resumida y reproducible del análisis
 estadístico desarrollado en mi tesis de grado en Matemática (mención Estadística
@@ -14,25 +14,48 @@ alimentos, utilizando datos previamente modificados con fines académicos.
 
 ---
 
-## 2. Carga y preparación de los datos
+## Carga y preparación de los datos
 
 ```{r}
 # Limpiar entorno
 rm(list = ls())
 
+# Librerías
+library(glmnet)
+
 # Cargar datos
 source("src/load_data.R")
+source("eda_multivariate.R")
+source("eda_univariate.R")
+source("glm_models.R")
+source("pca_analysis.R")
+source("regularized_models.R")
+
 
 data_list <- cargar_datos("data/data modificada 5 sem1.csv")
 
 dato1 <- data_list$dato1
 vari  <- data_list$variables
 ```
-
+El conjunto de datos contiene información epidemiológica de brotes de ETA,
+incluyendo variables categóricas, binarias y de conteo, las cuales son analizadas
+según su naturaleza.
 ---
 
-## 3. Análisis exploratorio univariado
+## Análisis exploratorio
 
+### Resumen descriptivo global
+
+Se realizó un análisis descriptivo de las variables cuantitativas mediante medidas resumen, rango, desviación estándar y varianza, con el fin de evaluar dispersión, escalas y posibles valores atípicos.
+
+```{r}
+summary(dato1)
+
+apply(dato1, 2, range)
+apply(dato1, 2, sd)
+apply(dato1, 2, var)
+```
+### Variables binarias
 A continuación se presentan algunas visualizaciones descriptivas de variables
 seleccionadas, con el fin de identificar patrones iniciales.
 
@@ -57,45 +80,144 @@ for (i in indices_otras) {
 binary_summary(dato1, indices_binarias)
 
 ```
+### Variables categóricas
+Para las variables categóricas se construyeron histogramas y tablas de frecuencia absoluta y relativa mediante una función auxiliar, lo que permite manejar variables con distinto número de niveles de forma automática.
+
+```{r}
+indices_factores <- c(
+  1, 4, 5,
+  45,46,47,48,49,50,51,52,
+  53,54
+)
+par(mfrow = c(1, 3))# variables-Temporal y geografico
+
+for (i in indices_factores[1:3]) {
+  plot_factor_hist(
+    dato1,
+    i,
+    breaks = seq(min(dato1[,i]) - 0.5,
+                 max(dato1[,i]) + 0.5,
+                 by = 1)
+  )
+}
+
+par(mfrow = c(2, 4)) # variables- Otros factores
+
+for (i in indices_factores[4:11]) {
+  plot_factor_hist(
+    dato1,
+    i,
+    breaks = seq(min(dato1[,i]) - 0.5,
+                 max(dato1[,i]) + 0.5,
+                 by = 1)
+  )
+}
+
+par(mfrow = c(1, 2))# variables- Diagnostico 
+
+for (i in indices_factores[12:13]) {
+  plot_factor_hist(
+    dato1,
+    i,
+    breaks = seq(min(dato1[,i]) - 0.5,
+                 max(dato1[,i]) + 0.5,
+                 by = 1)
+  )
+}
+
+tablas_factores <- lapply(indices_factores, function(i){
+  factor_summary(dato1, i)
+})
+
+names(tablas_factores) <- vari[indices_factores]
+```
+---
+### Variables de conteo
+
+Para las variables Expuestos y Enfermos se utilizaron diagramas de caja, permitiendo identificar asimetrías, valores extremos y diferencias en magnitud entre brotes.
 
 ```{r}
 # Variable de interés principal
+par(mfrow = c(1, 2))
 boxplot(dato1[, 8], main = "Distribución del número de enfermos",
         ylab = "Enfermos")
+boxplot(dato1[, 7], main = "Distribución del número de expuestos",
+        ylab = "Expuestos")
 ```
-
 ---
 
-## 4. Estadística descriptiva
+## Modelos de regresión penalizada: LASSO
 
-Se calculan medidas resumen para las variables analizadas.
+Se construyó la matriz de diseño mediante model.matrix, incorporando variables categóricas mediante codificación dummy.
+La variable respuesta corresponde al número de personas enfermas por brote.
 
 ```{r}
-summary(dato1)
+# modificacion de extructura de datos para hacer modelo lineal
+dato10=data.frame(dato1)
+head(dato10)
+attach(dato10)
 
-# Medias por variable
-apply(dato1, 2, mean)
+# modelo LASSO
+x = model.matrix(Enfermo ~ ., dato10)
+y = dato10$Enfermo
 ```
-
----
-
-## 5. Análisis multivariado: correlación
 
 ```{r}
-# Matriz de correlación
-cor_mat <- cor(dato1)
+set.seed(1)
 
-# Correlaciones más altas (excluyendo la diagonal)
-cor_values <- cor_mat[upper.tri(cor_mat)]
-sort(abs(cor_values), decreasing = TRUE)[1:10]
+n <- nrow(x)
+train <- sample(seq_len(n), size = floor(n / 2))
+test  <- setdiff(seq_len(n), train)
+
+y.test <- y[test]
+grid =10^ seq (10,-2, length =100)
 ```
 
----
+Se ajustó un modelo LASSO clásico utilizando la librería glmnet, explorando una grilla logarítmica de valores del parámetro de penalización λ.
 
-## 6. Modelo lineal generalizado (Poisson)
+```{r}
+lasso.mod = glmnet(x[train,], y[train], alpha = 1, lambda = grid)
+plot(lasso.mod)
+```
 
-Se ajusta un modelo Poisson para explicar el número de enfermos en función
-de las demás variables, excluyendo aquellas no pertinentes para el análisis.
+
+```{r}
+cv.out <- cv.glmnet(
+  x[train, ],
+  y[train],
+  alpha = 1
+)
+
+plot(cv.out)
+
+bestlam <- cv.out$lambda.min
+bestlam
+```
+
+
+```{r}
+lasso.pred <- predict(
+  lasso.mod,
+  s = bestlam,
+  newx = x[test, ]
+)
+
+mse_lasso <- mean((lasso.pred - y.test)^2)
+mse_lasso
+
+r2_lasso <- 1 - mean((y.test - lasso.pred)^2) /
+                  mean((y.test - mean(y.test))^2)
+r2_lasso
+```
+
+Los coeficientes distintos de cero representan las variables seleccionadas por
+el procedimiento LASSO, las cuales son consideradas relevantes en el análisis.
+
+```{r}
+coef_lasso <- as.matrix(coef(lasso.mod, s = bestlam))
+coef_no_nulos <- coef_lasso[coef_lasso[,1] != 0, , drop = FALSE]
+coef_no_nulos[-1, , drop = FALSE]
+```
 
 ```{r}
 dato_df <- data.frame(dato1)
