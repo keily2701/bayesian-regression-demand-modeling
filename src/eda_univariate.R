@@ -15,6 +15,30 @@ plot_binary_hist <- function(data, var_index, var_name = NULL) {
   )
 }
 
+# Tabla resumen de las variables binarias
+binary_summary <- function(dato1, indices){
+
+  counts_list <- lapply(indices, function(i){
+    h <- hist(dato1[, i], breaks = -1:1, plot = FALSE)
+    h$counts
+  })
+
+  counts <- do.call(rbind, counts_list)
+  colnames(counts) <- c("NO", "SI")
+
+  proportions <- counts / rowSums(counts)
+  colnames(proportions) <- c("P.NO", "P.SI")
+
+  result <- data.frame(
+    counts,
+    proportions
+  )
+
+  rownames(result) <- colnames(dato1)[indices]
+
+  return(result)
+}
+
 # Funcion de histograma para variables factores por rango numerico
 plot_factor_hist <- function(data, var_index, breaks, xlim = NULL) {
   hist(
@@ -26,6 +50,8 @@ plot_factor_hist <- function(data, var_index, breaks, xlim = NULL) {
     xlab = colnames(data)[var_index]
   )
 }
+
+
 
 # funcion para caja de boxplots
 plot_box_block <- function(data, indices, nrow = 2, ncol = 2) {
