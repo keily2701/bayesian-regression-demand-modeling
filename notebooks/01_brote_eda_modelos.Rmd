@@ -145,9 +145,7 @@ boxplot(dato1[, 7], main = "Distribución del número de expuestos",
         ylab = "Expuestos")
 ```
 ---
-
-## Modelos de regresión penalizada: LASSO
-
+## Modelo lineal generalizado para la variable *Enfermos*
 Se construyó la matriz de diseño mediante model.matrix, incorporando variables categóricas mediante codificación dummy.
 La variable respuesta corresponde al número de personas enfermas por brote.
 
@@ -155,8 +153,136 @@ La variable respuesta corresponde al número de personas enfermas por brote.
 # modificacion de extructura de datos para hacer modelo lineal
 dato10=data.frame(dato1)
 head(dato10)
-attach(dato10)
+```
 
+
+Dado que la variable respuesta *Enfermos* corresponde a un conteo, se ajustaron
+modelos lineales generalizados (GLM) bajo la distribución Poisson, con el fin de
+establecer un modelo base de referencia previo al uso de técnicas penalizadas.
+```{r}
+m1 <- glm(
+  Enfermos ~ .,
+  data = dato10,
+  family = poisson
+)
+
+summary(m1)
+```
+Este primer modelo incorpora la totalidad de las covariables disponibles,
+permitiendo evaluar su efecto conjunto sobre el número de personas enfermas.
+
+Debido a problemas de colinealidad, redundancia y variables derivadas, se ajustó
+un segundo modelo excluyendo variables altamente correlacionadas o no informativas.
+
+```{r}
+m2 <- glm(
+  Enfermos ~ . -
+    Año.estadistico -
+    Fallecidos -
+    Tasa.Letalidad -
+    total.de.fallecidos -
+    Hipoestesias -
+    Paralisis -
+    Otros.Neurológicos,
+  data = dato10,
+  family = poisson
+)
+
+resu1 <- summary(m2)
+resu1
+coe_m2 <- resu1$coefficients
+head(coe_m2)
+```
+La exclusión de variables responde a su relación directa con la variable respuesta
+o a su baja frecuencia, lo que podría afectar la estabilidad del modelo.
+```{r}
+m3 <- glm(
+  Enfermos ~ . -
+    Año.estadistico -
+    Fallecidos -
+    Tasa.Letalidad -
+    total.de.fallecidos -
+    Hipoestesias -
+    Paralisis -
+    Otros.Neurológicos -
+    Total.ambulatorios -
+    total.de.Hospitalizados -
+    total.sin.atención,
+  data = dato10,
+  family = poisson
+)
+
+resu2 <- summary(m3)
+resu2
+
+coe_m3 <- resu2$coefficients
+head(coe_m3)
+```
+Este modelo busca un equilibrio entre capacidad explicativa y parsimonia,
+reduciendo el número de covariables sin perder interpretabilidad.
+
+### Análisis de Componentes Principales
+
+Con el fin de explorar la estructura multivariada de los datos y evaluar la
+posible correlación entre las covariables, se realizó un Análisis de Componentes
+Principales (PCA). Este análisis permite reducir la dimensionalidad y detectar
+patrones de variabilidad relevantes antes de la aplicación de modelos penalizados.
+Se excluyó la variable Enfermos del PCA por corresponder a la variable respuesta del estudio.
+```{r}
+pca_eta <- princomp(
+  dato1[, -8],
+  cor = TRUE
+)
+```
+El análisis se realizó sobre las variables cuantitativas, utilizando la matriz de
+correlaciones con el fin de evitar el efecto de las distintas escalas de medición.
+
+```{r}
+plot(pca_eta, col = "tomato3")
+screeplot(pca_eta, type = "lines")
+```
+El gráfico de sedimentación permite evaluar la proporción de varianza explicada
+por cada componente principal y sugiere la presencia de una estructura de
+dimensionalidad reducida.
+```{r}
+loadings(pca_eta)
+```
+Las cargas factoriales indican la contribución de cada variable original a las
+componentes principales, permitiendo identificar grupos de variables con
+comportamiento similar.
+```{r}
+biplot(pca_eta)
+```
+El biplot permite visualizar simultáneamente observaciones y variables, destacando
+relaciones de correlación y direcciones de máxima variabilidad.
+```{r}
+par(mfrow = c(2,2), bg = "azure")
+
+for (i in 1:4) {
+  barplot(
+    loadings(pca_eta)[, i],
+    col = "blue2",
+    main = paste("Componente", i)
+  )
+}
+```
+Los gráficos de barras de las primeras componentes permiten identificar las
+variables con mayor contribución a la variabilidad total del sistema.
+```{r}
+head(pca_eta$scores)
+```
+Los scores representan las observaciones proyectadas en el nuevo espacio de
+componentes principales.
+
+La presencia de correlación entre covariables y la alta dimensionalidad observada
+refuerzan la necesidad de utilizar métodos de regularización, como la regresión
+LASSO, que permiten estabilizar las estimaciones y realizar selección automática
+de variables.
+
+---
+## Modelos de regresión penalizada: LASSO
+
+```{r}
 # modelo LASSO
 x = model.matrix(Enfermo ~ ., dato10)
 y = dato10$Enfermo
@@ -208,6 +334,7 @@ mse_lasso
 r2_lasso <- 1 - mean((y.test - lasso.pred)^2) /
                   mean((y.test - mean(y.test))^2)
 r2_lasso
+ecm=c( mean(( lasso.pred -y.test)^2))
 ```
 
 Los coeficientes distintos de cero representan las variables seleccionadas por
@@ -229,58 +356,118 @@ modelo_poisson <- glm(
 )
 
 summary(modelo_poisson)
+
 ```
 
 ---
 
-## 7. Regularización: LASSO Poisson
+## Regresión Ridge
 
-Se emplea regularización LASSO para la selección de variables relevantes.
-
+Además del modelo LASSO, se ajustó un modelo de regresión Ridge con el fin de
+comparar el efecto de distintas estrategias de regularización. A diferencia del
+LASSO, Ridge no realiza selección de variables, pero es especialmente útil en
+presencia de multicolinealidad.
 ```{r}
-library(glmnet)
-
-# Matriz de diseño
-x <- model.matrix(Enfermos ~ ., dato_df)
-y <- dato_df$Enfermos
-
-# Validación cruzada
-cv_lasso <- cv.glmnet(
+ridge.mod <- glmnet(
   x,
   y,
-  family = "poisson",
-  alpha = 1
+  alpha = 0,
+  lambda = grid
 )
 
-# Mejor lambda
-cv_lasso$lambda.min
+plot(ridge.mod)
+```
+El modelo Ridge se ajustó utilizando una grilla de valores del parámetro de
+penalización λ, permitiendo evaluar la contracción progresiva de los coeficientes.
+
+```{r}
+coef_ridge <- as.matrix(coef(ridge.mod))
+```
+A diferencia del LASSO, los coeficientes del modelo Ridge no se anulan exactamente,
+sino que son suavemente contraídos hacia cero.
+```{r}
+lambda_max <- max(ridge.mod$lambda)
+coef_max  <- coef(ridge.mod)[ridge.mod$lambda == lambda_max]
+
+sqrt(sum(coef_max[-1]^2))
 ```
 
 ```{r}
-# Coeficientes seleccionados por LASSO
-coef(cv_lasso, s = "lambda.min")
+
+sqrt(sum(coef(ridge.mod)[-1, 20]^2))
 ```
+La norma euclidiana del vector de coeficientes disminuye a medida que aumenta λ,
+reflejando el efecto de la penalización Ridge.
+```{r}
+ridge.mod <- glmnet(
+  x[train, ],
+  y[train],
+  alpha = 0,
+  lambda = grid,
+  thresh = 1e-12
+)
+```
+
+```{r}
+ridge.pred <- predict(
+  ridge.mod,
+  s = 4,
+  newx = x[test, ]
+)
+
+mean((ridge.pred - y.test)^2)
+mean((mean(y[train]) - y.test)^2)
+```
+El desempeño predictivo del modelo Ridge se comparó con un modelo base, utilizando
+el error cuadrático medio como métrica de evaluación.
+```{r}
+cv.out <- cv.glmnet(
+  x[train, ],
+  y[train],
+  alpha = 0
+)
+
+plot(cv.out)
+
+bestlam_ridge <- cv.out$lambda.min
+bestlam_ridge
+```
+```{r}
+ridge.pred <- predict(
+  ridge.mod,
+  s = bestlam_ridge,
+  newx = x[test, ]
+)
+
+mean((ridge.pred - y.test)^2)
+```
+```{r}
+out <- glmnet(x, y, alpha = 0)
+ridge.coef <- predict(out, type = "coefficients", s = bestlam_ridge)
+
+ridge.coef[ridge.coef != 0]
+```
+El modelo Ridge mantiene todas las covariables en el modelo final, aunque con
+coeficientes reducidos, lo que contrasta con el comportamiento selectivo del LASSO.
+```{r}
+plot(
+  ridge.pred,
+  y.test,
+  main = "Predicciones Ridge vs valores reales",
+  xlab = "Predicción",
+  ylab = "Observado"
+)
+```
+```{r}
+ecm <- c(ecm, mean((ridge.pred - y.test)^2))
+names(ecm) <- c("LASSO", "RIDGE")
+ecm
+```
+La comparación de los errores cuadráticos medios permite evaluar el compromiso
+entre capacidad predictiva y parsimonia de los distintos modelos ajustados.
 
 ---
 
-## 8. Análisis de componentes principales (PCA)
-
-Como herramienta exploratoria adicional, se realiza un PCA sobre las variables
-explicativas.
-
-```{r}
-# Excluir variable respuesta
-pca <- prcomp(dato1[, -8], scale. = TRUE)
-
-summary(pca)
-```
-
-```{r}
-plot(pca, main = "Scree plot")
-biplot(pca)
-```
-
----
 
 ## 9. Conclusiones
 
@@ -291,3 +478,8 @@ El modelo Poisson y la regularización LASSO evidencian que un subconjunto reduc
 de variables explica gran parte de la variabilidad observada en el número de
 enfermos, destacando la utilidad de técnicas de selección de variables en
 problemas reales de salud pública.
+
+La comparación entre modelos clásicos y regularizados evidencia que la
+regularización resulta especialmente útil en contextos con alta dimensionalidad
+y colinealidad, permitiendo mejorar la estabilidad de las estimaciones sin perder
+capacidad predictiva.
