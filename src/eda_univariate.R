@@ -41,11 +41,21 @@ binary_summary <- function(dato1, indices){
 
 # Funcion de histograma para variables factores por rango numerico
 plot_factor_hist <- function(data, var_index, breaks, xlim = NULL) {
+  
+  x <- data[, var_index]
+  x <- x[!is.na(x)]
+  
+  # Evitar variables constantes
+  if (length(unique(x)) <= 1) {
+    warning(paste("Variable", colnames(data)[var_index],
+                  "tiene un solo nivel. Gráfico omitido."))
+    return(invisible(NULL))
+  }
+  
   hist(
-    data[, var_index],
+    x,
     breaks = breaks,
     freq = TRUE,
-    xlim = xlim,
     main = colnames(data)[var_index],
     xlab = colnames(data)[var_index]
   )
