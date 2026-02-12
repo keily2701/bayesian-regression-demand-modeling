@@ -1,28 +1,69 @@
-# Bayesian Regression for Demand Forecasting
-
+## Poisson Regression and Regularization for Count Modeling
 ## 🔍 Problem
-Companies need to forecast demand under uncertainty to improve inventory and planning decisions.
+
+Modeling count data is a common task in applied statistics, particularly when the response variable represents the number of occurrences of an event.
+Accurate modeling and prediction are essential for decision-making and resource allocation.
 
 ## 🎯 Objective
-Develop a Bayesian regression model to estimate demand behavior and quantify uncertainty.
+
+Compare the predictive performance of:
+
+Poisson Generalized Linear Model (GLM)
+
+LASSO Regularized Poisson Regression
+
+Ridge Regularized Poisson Regression
+
+using out-of-sample validation.
 
 ## 🧠 Methodology
-- Bayesian linear regression
-- Prior selection
-- Posterior inference
-- Model comparison
+
+Train-test split (70–30)
+
+Poisson GLM estimation
+
+Cross-validated LASSO (α = 1)
+
+Cross-validated Ridge (α = 0)
+
+Performance evaluation on test set using:
+
+Mean Squared Error (MSE)
+
+Mean Absolute Error (MAE)
+
+Predictive R²
+
+All models were implemented in a modular pipeline structure.
 
 ## 🛠 Tools
-- Python (PyMC / statsmodels)
-- Data simulation
-- Visualization
+
+R
+
+glm() for Poisson regression
+
+glmnet for regularized regression
+
+Custom metric functions
+
+Reproducible train-test split
 
 ## 📈 Results
-- Improved interpretability of uncertainty
-- Robust estimates under small samples
 
-## 💡 Business Insight
-This approach allows decision-makers to:
-- Understand risk ranges
-- Make safer planning decisions
-- Adapt forecasts as new data arrives
+Comparison of predictive performance across models
+
+Evaluation of regularization impact
+
+Analysis of model stability and dispersion
+
+## 💡 Analytical Insight
+
+This project demonstrates:
+
+Proper validation methodology
+
+Model comparison under consistent metrics
+
+The impact of regularization in count data modeling
+
+Reproducible and modular code design
