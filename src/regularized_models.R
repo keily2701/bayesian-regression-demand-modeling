@@ -1,18 +1,26 @@
 # regularized_models.R
 library(glmnet)
 
-fit_lasso <- function(x, y, family = "gaussian", alpha = 1, seed = 1) {
+# Regresion de LASSO
+fit_lasso_poisson <- function(x_train, y_train, seed = 123) {
   set.seed(seed)
-  
-  train <- sample(1:nrow(x), nrow(x) / 2)
-  test <- setdiff(1:nrow(x), train)
-  
-  cv <- cv.glmnet(x[train, ], y[train], alpha = alpha, family = family)
-  
-  list(
-    model = glmnet(x[train, ], y[train], alpha = alpha, family = family),
-    best_lambda = cv$lambda.min,
-    prediction = predict(cv, newx = x[test, ]),
-    mse = mean((predict(cv, newx = x[test, ]) - y[test])^2)
+  glmnet(x_train,y_train, alpha = 1, lambda = grid)
+}
+
+
+# Regresion de ridge
+fit_ridge_poisson <- function(x_train, y_train, seed = 123) {
+  set.seed(seed)
+  glmnet(x_train, y_train,alpha = 0,lambda = grid)
+}
+
+
+# Funcion de prediccion
+predict_regularized <- function(model, x_test, lambda = "lambda.min") {
+  predict(
+    model,
+    s = lambda,
+    newx = x_test,
+    type = "response"
   )
 }
