@@ -1,90 +1,132 @@
 ---
 title: "Análisis estadístico de brotes alimentarios"
 author: "Keily Oropeza"
+date: "2026-01-20"
 output: html_document
+
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 ## Introducción
 
-Este documento presenta una versión resumida y reproducible del análisis
-estadístico desarrollado en mi tesis de grado en Matemática (mención Estadística
-y Aplicadas).  
-El estudio se centra en el análisis de brotes de enfermedades transmitidas por
-alimentos, utilizando datos previamente modificados con fines académicos.
+Este documento presenta una versión resumida y reproducible del análisis estadístico desarrollado en mi tesis de grado en Matemática (mención Estadística y Aplicadas).
+El estudio se centra en el análisis de brotes de enfermedades transmitidas por alimentos (ETA), utilizando una base de datos previamente modificados con fines académicos. Para simplificar el análisis y enfocarlo en ela variable de respuesta principal, se consideraron todas las enfermedades y se excluyeron las variables relacionadas con atención sanitaria. con el fin de simplificar el estudio. El objetivo principal es modelar la cantidad de personas enfermas en cada brote, comparando un modelo lineal generalizado (GLM) bajo distribución Poisson com técnicas r=de regularización (Lasso y Ridge).
 
 ---
 
 ## Carga y preparación de los datos
 
-```{r}
+```{r, echo=FALSE,message=FALSE}
 # Limpiar entorno
 rm(list = ls())
+
+# Semilla
+semilla=1
+set.seed(semilla)
 
 # Librerías
 library(glmnet)
 
 # Cargar datos
-source("src/load_data.R")
-source("eda_multivariate.R")
-source("eda_univariate.R")
-source("glm_models.R")
-source("pca_analysis.R")
-source("regularized_models.R")
+source("../src/load_data.R")
+source("../src/eda_multivariate.R")
+source("../src/eda_univariate.R")
+source("../src/glm_models.R")
+source("../src/metricas.R")
+source("../src/regularized_models.R")
 
+data_list = cargar_datos("../data/data modificada 5 sem1.csv")
 
-data_list <- cargar_datos("data/data modificada 5 sem1.csv")
-
-dato1 <- data_list$dato1
-vari  <- data_list$variables
+dato1 = data_list$dato1
+vari  = data_list$variables
 ```
-El conjunto de datos contiene información epidemiológica de brotes de ETA,
-incluyendo variables categóricas, binarias y de conteo, las cuales son analizadas
-según su naturaleza.
+
+El conjunto de datos contiene información epidemiológica de brotes de ETA, incluyendo variables categóricas, binarias y de conteo, las cuales son analizadas según su naturaleza.
+
 ---
 
 ## Análisis exploratorio
 
 ### Resumen descriptivo global
 
-Se realizó un análisis descriptivo de las variables cuantitativas mediante medidas resumen, rango, desviación estándar y varianza, con el fin de evaluar dispersión, escalas y posibles valores atípicos.
+Se realizó un análisis descriptivo de las variables cuantitativas mediante medidas resumen, rango de valores, desviación estándar y varianza, con el objetivo de evaluar la dispersión, las escalas y posibles valores atípicos.
 
-```{r}
-summary(dato1)
+A partir del resumen descriptivo se observa que:
 
-apply(dato1, 2, range)
-apply(dato1, 2, sd)
-apply(dato1, 2, var)
+- El periodo de incubación y la duración del brote presentan valores donde el 75% de las observaciones es menor o igual a un día.
+- El número promedio de personas expuestas es `r mean(dato1[,7])`.
+- El número promedio de personas enfermas es `r mean(dato1[,8])`.
+- La tasa de ataque promedio es de `r mean(dato1[,9])` %.
+
+```{r, echo=FALSE}
+summary(dato1[,c(2:9)])
 ```
-### Variables binarias
-A continuación se presentan algunas visualizaciones descriptivas de variables
-seleccionadas, con el fin de identificar patrones iniciales.
 
-```{r}
+Las variables binarias correspondiente a los síntomas van desde 'Náuseas' hasta 'Meteorismo' y 'Otros'.
+Se consideraron las primeras `r max(dato1[,1])` semanas y  `r max(dato1[,4])` regiones de observación (notificación y consumo). 
+Además, se incluyeron `r max(dato1[,53])` diagnósticos médicos (CIE-10), `r max(dato1[,52])` locales de pérdida de inocidad, `r max(dato1[,51])` procesos de pérdida de inocuidad, `r max(dato1[,50])` factores de proliferación, `r max(dato1[,49])` factores de supervivencia y `r max(dato1[,48])` factores de contaminación, `r max(dato1[,47])` locales de consumo y elaboración y `r max(dato1[,45])` grupos alimenticios sospechosos.
+
+```{r,echo=FALSE}
+apply(dato1[,-c(10:28)], 2, range)
+```
+ 
+ En cuanto a las mayores varianzas se encuentran en la cantidad de expuestos y tasa de ataque. 
+
+```{r,echo=FALSE}
+
+apply(dato1[,-c(10:28)], 2, var)
+```
+
+### Variables binarias
+A continuación se presentan algunas visualizaciones descriptivas de variables seleccionadas, con el fin de identificar patrones iniciales.
+
+```{r, echo=FALSE}
 # Variables binarias
-indices_sintomas <- c(29:44)
-indices_otras    <- c(6, 55, 56)
-indices_binarias <- c( indices_sintomas,indices_otras)
+indices_sintomas = c(29:44)
+indices_otras    = c(6, 55, 56)
+indices_binarias = c( indices_sintomas,indices_otras)
 
 par(mfrow = c(3, 3))
 for (i in indices_sintomas) {
   plot_binary_hist(dato1, i)
 }
+```
 
+A partir de las gráficas anteriores se identifica que los síntomas más frecuentes en los brotes son náuseas, vómitos, diarrea y dolores abdominales.
+
+En cuanto a la coincidencia de regiones de notificación y consumo (R.N.RC), la mayoría coincide. Respecto a la consideración del evento como brote (C.Brote), la mayor parte de los registros fue clasificada efectivamente como brote. Finalmente, en relación con la contemplación de inspección (C.Inspec), no se observa una diferencia marcada entre las categorías, aunque existe una ligera mayoría de casos que no requieren inspección.  
+
+```{r, echo=FALSE}
 par(mfrow = c(1, 3))
 
 for (i in indices_otras) {
   plot_binary_hist(dato1, i)
 }
 
-# Tabla resumen
-binary_summary(dato1, indices_binarias)
-
 ```
-### Variables categóricas
-Para las variables categóricas se construyeron histogramas y tablas de frecuencia absoluta y relativa mediante una función auxiliar, lo que permite manejar variables con distinto número de niveles de forma automática.
+
+Ahora, estudiando a fondo esta información, se obtiene la siguiente tabla resumen.
+
+
 
 ```{r}
-indices_factores <- c(
+# Tabla resumen
+result=binary_summary(dato1, indices_binarias)
+result
+```
+
+Se puede concluir que la mayor probabilidad de ocurrir se tiene en el síntoma diarrea con `r result[3,4]*100` %, la coincidencia de regiones de notificación y consumo con `r result[17,4]*100` % y consideración de brote con `r result[18,4]*100` %. Por el contrario, lo menos frecuente es el síntoma de espasmos con `r result[7,3]*100` % de posibilidades de no ocurrir, seguido por heces sanguinolentas y parestesias con `r result[6,3]*100` % de no aparecer en los brotes. 
+
+### Variables categóricas
+
+Para las variables categóricas se construyeron histogramas y tablas de frecuencia absoluta y relativa mediante una función auxiliar, lo que permite manejar variables con distinto número de niveles de forma automática.
+
+
+```{r, echo=FALSE}
+indices_factores = c(
   1, 4, 5,
   45,46,47,48,49,50,51,52,
   53,54
@@ -125,361 +167,284 @@ for (i in indices_factores[12:13]) {
   )
 }
 
-tablas_factores <- lapply(indices_factores, function(i){
+tablas_factores = lapply(indices_factores, function(i){
   factor_summary(dato1, i)
 })
 
-names(tablas_factores) <- vari[indices_factores]
+names(tablas_factores) = vari[indices_factores]
 ```
----
+
+
+A partir de los gráficos y tablas de frecuenciase identifican los siguientes patrones:
+
+- La semana con mayor frecuencia de brotes corresponde a la semana 3.
+- La región con mayor número de brotes es la región 13 (Metropolitana de Santiago).
+- Los grupos alimenticios sospechosos más usuales son el grupo 3 (platos preparados) y el grupo  9 (huevos).
+- El local de elaboración más frecuente corresponde a la autopreparación (categoría 3).
+- El lugar de consumo más frecuente es el hogar (categoría 1).
+
+En relación con los factores asociados:
+  - Proliferación: Categoría 5 (situaciones no determinadas).
+  - Contaminación: Categoría 3 (productos crudos y contaminados con patogenos).
+  - Supervivencia: Categoría 2 (otras fallas no descritas).
+- El  diagnóstico CIE 10 más frecuente es A059 (intoxicación alimentaria bacteriana no especificada).
+- El tipo de diagnóstico más frecuente corresponde al segundo nivel (diagnóstico inespecífico).
+-El proceso de pérdida de inocuidad (P.P.I) más frecuente es la manipulación comercial (Categoría 2).
+- El Lugar de pérdida de inocuidad (L.P.I) más común es el domicilio (Categoría 1).
+
+
+
 ### Variables de conteo
 
-Para las variables Expuestos y Enfermos se utilizaron diagramas de caja, permitiendo identificar asimetrías, valores extremos y diferencias en magnitud entre brotes.
+Para las variables Expuestos y Enfermos se utilizaron diagramas de caja, permitiendo identificar asimetrías, valores extremos y diferencias en magnitud entre brotes. Se observa que ambas variables presentan varios puntos atípicos superiores. Nótese que en la variable ‘Expuestos’ la mayoría de los datos se concentra entre 0 y 100 personas, incluyendo el bigote superior y algunos valores atípicos. El valor máximo alcanza aproximadamente 600 personas, correspondiendo a dos casos atípicos.
 
-```{r}
+```{r, echo=FALSE}
 # Variable de interés principal
 par(mfrow = c(1, 2))
-boxplot(dato1[, 8], main = "Distribución del número de enfermos",
+boxplot(dato1[, 8], main = "Dist. del número de enfermos",
         ylab = "Enfermos")
-boxplot(dato1[, 7], main = "Distribución del número de expuestos",
+boxplot(dato1[, 7], main = "Dist. del número de expuestos",
         ylab = "Expuestos")
 ```
+
 ---
+
 ## Modelo lineal generalizado para la variable *Enfermos*
-Se construyó la matriz de diseño mediante model.matrix, incorporando variables categóricas mediante codificación dummy.
-La variable respuesta corresponde al número de personas enfermas por brote.
 
-```{r}
-# modificacion de extructura de datos para hacer modelo lineal
-dato10=data.frame(dato1)
-head(dato10)
+```{r,echo=FALSE}
+set.seed(semilla)
+# modificacion de extructura de datos
+dato10=data.frame(dato1[,-c(10:28)])
+
+x = model.matrix(Enfermos ~ ., dato10)
+y = dato10$Enfermos
+
+
+n = nrow(x)
+train = sample(seq_len(n), size = floor(n*0.7))
+test  = setdiff(seq_len(n), train)
+
+test_data  = dato10[-train, ]
+y.test = y[test]
+grid =10^ seq (10,-2, length =100)
 ```
-
 
 Dado que la variable respuesta *Enfermos* corresponde a un conteo, se ajustaron
 modelos lineales generalizados (GLM) bajo la distribución Poisson, con el fin de
 establecer un modelo base de referencia previo al uso de técnicas penalizadas.
-```{r}
-m1 <- glm(
-  Enfermos ~ .,
-  data = dato10,
-  family = poisson
-)
+
+```{r, echo=FALSE}
+m1 = glm_model <- fit_glm_poisson(Enfermos ~ ., dato10[train,])
 
 summary(m1)
 ```
-Este primer modelo incorpora la totalidad de las covariables disponibles,
-permitiendo evaluar su efecto conjunto sobre el número de personas enfermas.
 
-Debido a problemas de colinealidad, redundancia y variables derivadas, se ajustó
-un segundo modelo excluyendo variables altamente correlacionadas o no informativas.
+Este modelo incorpora la totalidad de las covariables disponibles, permitiendo evaluar su efecto conjunto sobre el número de personas enfermas, bajo el supuesto de distribución de Poisson. 
 
-```{r}
-m2 <- glm(
-  Enfermos ~ . -
-    Año.estadistico -
-    Fallecidos -
-    Tasa.Letalidad -
-    total.de.fallecidos -
-    Hipoestesias -
-    Paralisis -
-    Otros.Neurológicos,
-  data = dato10,
-  family = poisson
-)
+Las variables que resultan estadisticamente  significativas a nivel de significancia 0.001 (***) incluyen: 
 
-resu1 <- summary(m2)
-resu1
-coe_m2 <- resu1$coefficients
-head(coe_m2)
+- P.Incubacion, Tiempo de incubación
+- Duracion.B, duración del brote
+- Expuestos
+- Heces.Sang, heces sanguinolentas
+- P.P.I, proceso de pérdida de inocuidad
+
+```{r,echo=FALSE}
+y_hat = predict_glm(m1, test_data)
+met_glm    <- metricas(y.test, y_hat)
+met_glm
 ```
-La exclusión de variables responde a su relación directa con la variable respuesta
-o a su baja frecuencia, lo que podría afectar la estabilidad del modelo.
-```{r}
-m3 <- glm(
-  Enfermos ~ . -
-    Año.estadistico -
-    Fallecidos -
-    Tasa.Letalidad -
-    total.de.fallecidos -
-    Hipoestesias -
-    Paralisis -
-    Otros.Neurológicos -
-    Total.ambulatorios -
-    total.de.Hospitalizados -
-    total.sin.atención,
-  data = dato10,
-  family = poisson
-)
 
-resu2 <- summary(m3)
-resu2
 
-coe_m3 <- resu2$coefficients
-head(coe_m3)
-```
-Este modelo busca un equilibrio entre capacidad explicativa y parsimonia,
-reduciendo el número de covariables sin perder interpretabilidad.
+Las métricas de desempeño obtenidas sobre el conjunto de prueba son:
 
-### Análisis de Componentes Principales
-
-Con el fin de explorar la estructura multivariada de los datos y evaluar la
-posible correlación entre las covariables, se realizó un Análisis de Componentes
-Principales (PCA). Este análisis permite reducir la dimensionalidad y detectar
-patrones de variabilidad relevantes antes de la aplicación de modelos penalizados.
-Se excluyó la variable Enfermos del PCA por corresponder a la variable respuesta del estudio.
-```{r}
-pca_eta <- princomp(
-  dato1[, -8],
-  cor = TRUE
-)
-```
-El análisis se realizó sobre las variables cuantitativas, utilizando la matriz de
-correlaciones con el fin de evitar el efecto de las distintas escalas de medición.
-
-```{r}
-plot(pca_eta, col = "tomato3")
-screeplot(pca_eta, type = "lines")
-```
-El gráfico de sedimentación permite evaluar la proporción de varianza explicada
-por cada componente principal y sugiere la presencia de una estructura de
-dimensionalidad reducida.
-```{r}
-loadings(pca_eta)
-```
-Las cargas factoriales indican la contribución de cada variable original a las
-componentes principales, permitiendo identificar grupos de variables con
-comportamiento similar.
-```{r}
-biplot(pca_eta)
-```
-El biplot permite visualizar simultáneamente observaciones y variables, destacando
-relaciones de correlación y direcciones de máxima variabilidad.
-```{r}
-par(mfrow = c(2,2), bg = "azure")
-
-for (i in 1:4) {
-  barplot(
-    loadings(pca_eta)[, i],
-    col = "blue2",
-    main = paste("Componente", i)
-  )
-}
-```
-Los gráficos de barras de las primeras componentes permiten identificar las
-variables con mayor contribución a la variabilidad total del sistema.
-```{r}
-head(pca_eta$scores)
-```
-Los scores representan las observaciones proyectadas en el nuevo espacio de
-componentes principales.
-
-La presencia de correlación entre covariables y la alta dimensionalidad observada
-refuerzan la necesidad de utilizar métodos de regularización, como la regresión
-LASSO, que permiten estabilizar las estimaciones y realizar selección automática
-de variables.
+- Error Cuadrático Medio (ECM): `r met_glm['ECM']`
+- Error Absoluto Medio: `r met_glm['EAM']` 
+- Coeficiente de determinación (R2): `r met_glm['R2']`
 
 ---
+
 ## Modelos de regresión penalizada: LASSO
 
-```{r}
-# modelo LASSO
-x = model.matrix(Enfermo ~ ., dato10)
-y = dato10$Enfermo
-```
+El modelo LASSO fue ajustado utilizando validación cruzada para seleccionar el parámetro óptimo de penalización λ. Esta técnica permite realizar simultáneamente estimación y selección de variables mediante penalización L1.
 
-```{r}
-set.seed(1)
+Se utilizó una división 70 % entrenamiento y 30 % prueba, con el fin de evaluar el desempeño predictivo fuera de muestra.
 
-n <- nrow(x)
-train <- sample(seq_len(n), size = floor(n / 2))
-test  <- setdiff(seq_len(n), train)
+Se utilizó una grilla de 100 valores de λ en el rango [10^-2, 10^10], permitiendo analizar el efecto progresivo de la penalización sobre los coeficientes.
 
-y.test <- y[test]
-grid =10^ seq (10,-2, length =100)
-```
 
-Se ajustó un modelo LASSO clásico utilizando la librería glmnet, explorando una grilla logarítmica de valores del parámetro de penalización λ.
+```{r,warning=FALSE}
 
-```{r}
-lasso.mod = glmnet(x[train,], y[train], alpha = 1, lambda = grid)
+lasso.mod =fit_lasso_poisson (x[train,], y[train], semilla) 
 plot(lasso.mod)
 ```
 
+En la Figura anterior se observa que cada coeficiente de una de las variables son representadas con una curva de un color distinto, al estudiar el modelo LASSO se encuentra que con una norma 1 se puede notar que se tienen variables con valores negativo y positivos. Además, se puede observar que a medida que la norma disminuye y se aproxima a 0, las variables van siendo eliminadas progresivamente, reduciéndose así su número en el modelo.
 
-```{r}
-cv.out <- cv.glmnet(
-  x[train, ],
-  y[train],
-  alpha = 1
-)
+Ahora, se estudia los intervalos de confianza del Error Cuadratico Medio (ECM) estimado para cada valor del log(λ), donde el punto rojo representa el valor estimado de error.
+
+
+```{r,echo=FALSE}
+set.seed(semilla)
+cv.out = cv.glmnet(x[train, ], y[train], alpha = 1)
 
 plot(cv.out)
+bestlam = cv.out$lambda.min
 
-bestlam <- cv.out$lambda.min
-bestlam
 ```
 
+En la Figura anterior, se observa que para el
+modelo LASSO el menor ECM esta para valores de log(λ) mayores a -1, con mejor valor de log(λ) =`r log(bestlam)`, o seja, λ =`r bestlam`.
 
-```{r}
-lasso.pred <- predict(
-  lasso.mod,
-  s = bestlam,
-  newx = x[test, ]
+
+En el modelo LASSO en la Figura siguiente,  utilizando el valor de penalización λ =`r bestlam`.
+
+```{r, echo=FALSE}
+lasso.pred =  predict_regularized(
+  lasso.mod, x[test, ], bestlam)
+  
+
+plot( y.test, lasso.pred,
+  pch = 16,
+  col = rgb(0, 0, 0, 0.8),
+  xlab = "Valores observados",
+  ylab = "Valores predichos",
+  xlim=c(0,25),
+  ylim= c(0,10)
 )
 
-mse_lasso <- mean((lasso.pred - y.test)^2)
-mse_lasso
-
-r2_lasso <- 1 - mean((y.test - lasso.pred)^2) /
-                  mean((y.test - mean(y.test))^2)
-r2_lasso
-ecm=c( mean(( lasso.pred -y.test)^2))
+abline(0, 1, col = "blue", lwd = 2)
 ```
 
-Los coeficientes distintos de cero representan las variables seleccionadas por
-el procedimiento LASSO, las cuales son consideradas relevantes en el análisis.
 
-```{r}
-coef_lasso <- as.matrix(coef(lasso.mod, s = bestlam))
-coef_no_nulos <- coef_lasso[coef_lasso[,1] != 0, , drop = FALSE]
+Se observa que para la relación entre los datos predichos y los observados los valores predichos estan entre `r min(lasso.pred)` y `r max(lasso.pred)` para los valores predichos, con una dispersión considerable alrededor de la linea de referencia sobre la igualdad de ambos valores (linea azul).
+
+```{r, echo=FALSE}
+met_lasso  <- metricas(y.test, lasso.pred)
+met_lasso
+```
+Ahora al observar las medidas de bondad de ajuste para este caso el Error Cuadratico Medio (ECM) es `r met_lasso['ECM']`, el Error Absoluto Medio es `r met_lasso['EAM']` y el o R2  es `r met_lasso['R2']`
+
+
+Observando los coeficientes distintos de cero que representan las variables seleccionadas por el procedimiento LASSO, se tienen las siguientes:
+
+```{r, echo=FALSE}
+coef_lasso = as.matrix(coef(lasso.mod, s = bestlam))
+coef_no_nulos = coef_lasso[coef_lasso[,1] != 0, , drop = FALSE]
 coef_no_nulos[-1, , drop = FALSE]
-```
-
-```{r}
-dato_df <- data.frame(dato1)
-
-modelo_poisson <- glm(
-  Enfermos ~ . - Año.estadistico - Fallecidos - Tasa.Letalidad,
-  data = dato_df,
-  family = poisson
-)
-
-summary(modelo_poisson)
-
 ```
 
 ---
 
 ## Regresión Ridge
 
-Además del modelo LASSO, se ajustó un modelo de regresión Ridge con el fin de
-comparar el efecto de distintas estrategias de regularización. A diferencia del
-LASSO, Ridge no realiza selección de variables, pero es especialmente útil en
-presencia de multicolinealidad.
-```{r}
-ridge.mod <- glmnet(
-  x,
-  y,
-  alpha = 0,
-  lambda = grid
-)
+Además del modelo LASSO, se ajustó un modelo de regresión Ridge con el fin de comparar el efecto de distintas estrategias de regularización. A diferencia del LASSO, la regresión Ridge (penalización L2) no elimina variables del modelo, sino que contrae sus coeficientes hacia cero. Esta técnica es particularmente útil cuando existe multicolinealidad entre las variables explicativas.
 
+
+El modelo Ridge se ajustó utilizando una grilla de valores del parámetro de penalización λ, permitiendo evaluar la contracción progresiva de los coeficientes. 
+
+```{r}
+ridge.mod = fit_ridge_poisson(x[train,], y[train], semilla) 
 plot(ridge.mod)
 ```
-El modelo Ridge se ajustó utilizando una grilla de valores del parámetro de
-penalización λ, permitiendo evaluar la contracción progresiva de los coeficientes.
 
-```{r}
-coef_ridge <- as.matrix(coef(ridge.mod))
-```
-A diferencia del LASSO, los coeficientes del modelo Ridge no se anulan exactamente,
-sino que son suavemente contraídos hacia cero.
-```{r}
-lambda_max <- max(ridge.mod$lambda)
-coef_max  <- coef(ridge.mod)[ridge.mod$lambda == lambda_max]
 
-sqrt(sum(coef_max[-1]^2))
-```
+Observe que a diferencia del modelo LASSO, los coeficientes del modelo Ridge no se anulan exactamente, sino que son suavemente contraídos hacia cero.
 
-```{r}
+Ahora, se estudia los intervalos de confianza del Error Cuadratico Medio (ECM) estimado para cada valor del log(λ), donde el punto rojo representa el valor estimado de error.
 
-sqrt(sum(coef(ridge.mod)[-1, 20]^2))
-```
-La norma euclidiana del vector de coeficientes disminuye a medida que aumenta λ,
-reflejando el efecto de la penalización Ridge.
-```{r}
-ridge.mod <- glmnet(
-  x[train, ],
-  y[train],
-  alpha = 0,
-  lambda = grid,
-  thresh = 1e-12
-)
-```
-
-```{r}
-ridge.pred <- predict(
-  ridge.mod,
-  s = 4,
-  newx = x[test, ]
-)
-
-mean((ridge.pred - y.test)^2)
-mean((mean(y[train]) - y.test)^2)
-```
-El desempeño predictivo del modelo Ridge se comparó con un modelo base, utilizando
-el error cuadrático medio como métrica de evaluación.
-```{r}
-cv.out <- cv.glmnet(
-  x[train, ],
-  y[train],
-  alpha = 0
-)
+```{r,echo=FALSE}
+set.seed(semilla)
+cv.out = cv.glmnet( x[train, ],  y[train], alpha = 0)
 
 plot(cv.out)
 
-bestlam_ridge <- cv.out$lambda.min
-bestlam_ridge
+bestlam_ridge = cv.out$lambda.min
 ```
-```{r}
-ridge.pred <- predict(
-  ridge.mod,
-  s = bestlam_ridge,
-  newx = x[test, ]
+
+En la Figura anterior, se observa que para el
+modelo RIDGE el menor ECM esta para valores de log(λ) mayores a 3, con mejor valor de log(λ) =`r log(bestlam_ridge)`, o seja, λ =`r bestlam_ridge`.
+
+
+En el modelo RIDGE en la Figura siguiente,  utilizando el valor de penalización λ =`r bestlam_ridge`. 
+
+
+```{r, echo=FALSE}
+ridge.pred = predict_regularized(ridge.mod, x[test, ],bestlam_ridge)
+  
+
+plot( y.test, ridge.pred,
+  pch = 16,
+  col = rgb(0, 0, 0, 0.8),
+  xlab = "Valores observados",
+  ylab = "Valores predichos",
+  ylim =c(0,10),
+  xlim=c(0,50)
 )
 
-mean((ridge.pred - y.test)^2)
+abline(0, 1, col = "blue", lwd = 2)
 ```
-```{r}
-out <- glmnet(x, y, alpha = 0)
-ridge.coef <- predict(out, type = "coefficients", s = bestlam_ridge)
 
-ridge.coef[ridge.coef != 0]
+Se observa que para la relación entre los datos predichos y los observados los valores predichos estan entre `r min(ridge.pred)` y `r max(ridge.pred)` para los valores predichos, con una dispersión considerable alrededor de la linea de referencia sobre la igualdad de ambos valores (linea azul).
+
+```{r,echo=FALSE}
+met_ridge  <- metricas(y.test, ridge.pred)
+
+
 ```
-El modelo Ridge mantiene todas las covariables en el modelo final, aunque con
-coeficientes reducidos, lo que contrasta con el comportamiento selectivo del LASSO.
-```{r}
-plot(
-  ridge.pred,
-  y.test,
-  main = "Predicciones Ridge vs valores reales",
-  xlab = "Predicción",
-  ylab = "Observado"
-)
+
+Ahora al observar las medidas de bondad de ajuste para este caso el Error Cuadratico Medio (ECM) es `r met_ridge['ECM']`, el Error Absoluto Medio es `r met_ridge['EAM']` y el o R2  es `r met_ridge['R2']`
+
+
+Observando los 10 coeficientes con mayor peso en el modelo de RIDGE, se tienen las siguientes:
+
+```{r,echo=FALSE}
+ridge.coef = coef(ridge.mod, s = bestlam_ridge)
+coef_vec = as.vector(ridge.coef)
+names(coef_vec) = rownames(ridge.coef)
+top10 = sort(abs(coef_vec), decreasing = TRUE)[1:10]
+top10_coef = coef_vec[names(top10)]
+top10_coef
+
 ```
-```{r}
-ecm <- c(ecm, mean((ridge.pred - y.test)^2))
-names(ecm) <- c("LASSO", "RIDGE")
-ecm
-```
-La comparación de los errores cuadráticos medios permite evaluar el compromiso
-entre capacidad predictiva y parsimonia de los distintos modelos ajustados.
 
 ---
 
 
-## 9. Conclusiones
 
-El análisis exploratorio permitió identificar patrones relevantes en la
-distribución de síntomas y variables asociadas a los brotes alimentarios.
+## 9. Comparaciones
 
-El modelo Poisson y la regularización LASSO evidencian que un subconjunto reducido
-de variables explica gran parte de la variabilidad observada en el número de
-enfermos, destacando la utilidad de técnicas de selección de variables en
-problemas reales de salud pública.
+Al comparar las métricas de desempeño sobre el conjunto de prueba, se observa que:
 
-La comparación entre modelos clásicos y regularizados evidencia que la
-regularización resulta especialmente útil en contextos con alta dimensionalidad
-y colinealidad, permitiendo mejorar la estabilidad de las estimaciones sin perder
-capacidad predictiva.
+- El modelo GLM presenta el menor ECM y mayor R².
+- El modelo Ridge empeora levemente respecto a LASSO en términos de ECM y EAM.
+- Ninguno de los modelos penalizados supera al GLM completo en capacidad predictiva.
+
+Estos resultados sugieren que, para esta base de datos, la regularización no aporta una mejora sustancial en términos predictivos.
+
+
+```{r,echo=FALSE}
+tabla <- rbind(
+  GLM    = met_glm,
+  LASSO  = met_lasso,
+  RIDGE  = met_ridge
+)
+
+round(tabla, 4)
+
+```
+ 
+ Por lo anterior se puede concluir que para modelar la cantidad de enfermos no resulta beneficioso realizar selección de variables ni penalizaciones del tipo RIDGE, comparado con un modelo GLM más simple.
+
+---
+## 10. Conclusiones
+
+El análisis desarrollado permitió estudiar de manera estructurada los brotes de enfermedades transmitidas por alimentos mediante herramientas estadísticas clásicas y técnicas de regularización.
+
+El análisis exploratorio identificó patrones relevantes en síntomas, factores de contaminación y características geográficas y temporales de los brotes.
+
+Desde el punto de vista predictivo, el modelo lineal generalizado con distribución Poisson mostró el mejor desempeño en términos de ECM y R² sobre el conjunto de prueba. Aunque las técnicas penalizadas (LASSO y Ridge) permiten controlar la complejidad del modelo y mitigar posibles problemas de multicolinealidad, en este caso no lograron mejorar la capacidad predictiva respecto al GLM completo.
+
+En consecuencia, para esta estructura de datos y bajo el objetivo de predicción del número de enfermos, un GLM Poisson tradicional resulta suficiente y estadísticamente sólido.
+
+Este análisis evidencia la importancia de comparar distintos enfoques metodológicos antes de adoptar técnicas más complejas, privilegiando siempre el equilibrio entre interpretabilidad y desempeño predictivo.
