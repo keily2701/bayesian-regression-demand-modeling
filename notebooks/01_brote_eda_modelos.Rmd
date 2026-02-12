@@ -32,7 +32,6 @@ library(glmnet)
 
 # Cargar datos
 source("../src/load_data.R")
-source("../src/eda_multivariate.R")
 source("../src/eda_univariate.R")
 source("../src/glm_models.R")
 source("../src/metricas.R")
