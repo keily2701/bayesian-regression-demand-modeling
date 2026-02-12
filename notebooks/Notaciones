@@ -1,0 +1,151 @@
+Lista de notaciones de las categorias:
+++++++++++++++++++++++++++++++++++++++++++++++
+NOTACION	
+++++++++++++++++++++++++++++++++++++++++++++++
+0- NO 	
+1- SI	
+
+++++++++++++++++++++++++++++++++++++++++++++++
+Conclusión del brote:	
+++++++++++++++++++++++++++++++++++++++++++++++
+0- Realizada, se descarta 		
+1- Realizada, se confirma 		
+
+++++++++++++++++++++++++++++++++++++++++++++++
+Tipo de Diagnostico:
+++++++++++++++++++++++++++++++++++++++++++++++
+0- Sin Información Diagnostica	
+1- Diagnostico especifico	
+2- Diagnostico inespecifico	
+
+++++++++++++++++++++++++++++++++++++++++++++++
+Proceso de pérdida de inocuidad:
+++++++++++++++++++++++++++++++++++++++++++++++
+0- Sin informacion
+1- Almacenamiento
+2- Manipulación comercial
+3- Manipulación doméstica
+4- No determinado
+5- Procesamiento industrial
+6- Producción primaria y materia prima
+7- Transporte
+
+++++++++++++++++++++++++++++++++++++++++++++++
+Lugar Perdida Inocuidad
+++++++++++++++++++++++++++++++++++++++++++++++
+0- sin informacion
+1- Domicilio
+2- Establecimiento
+
+++++++++++++++++++++++++++++++++++++++++++++++
+Local de elaboración:
+++++++++++++++++++++++++++++++++++++++++++++++
+0-	SIN INFORMACIÓN
+1-	INSTALACION ELABORACION
+2-	INSTALACION ELABORACION Y CONSUMO
+3-	LUGAR AUTOPREPARACION
+4-	LUGAR NO HABILITADO O SOLO EXPENDIO
+
+++++++++++++++++++++++++++++++++++++++++++++++
+Local consumo: 
+++++++++++++++++++++++++++++++++++++++++++++++
+0-	SIN INFORMACIÓN
+1-	HOGAR
+2-	INSTALACIÓN DESTINADA A LA PREPARACIÓN Y CONSUMO INMEDIATO DE ALIMENTOS
+3-	LUGAR NO HABILITADO O SOLO EXPENDIO
+4-	OTROS LUGARES
+
+++++++++++++++++++++++++++++++++++++++++++++++
+Fractor contribuyente de Contaminación:	
+++++++++++++++++++++++++++++++++++++++++++++++
+0-      ninguno		
+1- C1,	sustancia toxica en el tejido
+2- C3,	adicion excesiva de toxicos
+3- C4,  producto crudo
+4- C5,	contaminacion cruzada
+5- C6,	manipulacion por infectado
+6- C7,	otras fuentes no descrits
+7- C8,	sin definir
+
+++++++++++++++++++++++++++++++++++++++++++++++
+Factor contribuyente de Supervivencia:	
+++++++++++++++++++++++++++++++++++++++++++++++
+0-      ninguno/ no informado
+1- S1,	insuficiente tiempo de cocion	
+2- S4,	otras fallas de procesamiento	
+3- S5,	sin definir	
+4- S3,	Insuficiente descongelamiento 
+
+++++++++++++++++++++++++++++++++++++++++++++++
+Factor contribuyente de Proliferación:
+++++++++++++++++++++++++++++++++++++++++++++++
+0-    	no informado
+1-	P1,	Enfriamiento lento
+2-	P2,	Inadecuada conservación en frío o en caliente
+3-	P3,	Almacenaje en frio por largo tiempo
+4-	P6,	Envasado en condiciones de anaerobiosis/atmósfera modificada
+5-	P7,	Otras situaciones que faciliten o permitan el crecimiento microbiano o la producción de toxinas, no descrita arriba
+6-	P4,	Insuficiente disminución de actividad del agua
+7-	P5,	Inadecuado descongelamiento de productos congelados
+
+++++++++++++++++++++++++++++++++++++++++++++++
+Grupo Alimento Sospechoso:
+++++++++++++++++++++++++++++++++++++++++++++++
+0- Sin informacion
+1- BEBIDAS
+2- CARNES Y PRODUCTOS CARNEOS (Incluidas carnes de aves y de caza)	
+3- COMIDAS Y PLATOS PREPARADOS	
+4- ESTIMULANTES Y FRUITIVOS	
+5- FRUTAS Y HORTALIZAS	
+6- HUEVOS Y OVOPRODUCTOS	
+7- LECHE Y PRODUCTOS LACTEOS	
+8- No identificado	
+9- PESCADOS Y PRODUCTOS DE LA PESCA	
+10-PRODUCTOS DE PANADERIA Y PASTELERIA	
+11-AZUCARES, JARABES Y MIEL
+12-CALDOS, SOPAS, CREMAS Y MEZCLAS DESHIDRATADAS
+13-CONSERVAS
+14-HELADOS Y MEZCLAS PARA HELADOS
+15-PRODUCTOS DE CONFITERIA	
+16-PRODUCTOS ELABORADOS A PARTIR DE CEREALES
+17-PRODUCTOS GRASOS
+18-SALSAS, ADEREZOS, ESPECIAS Y CONDIMENTOS
+
+++++++++++++++++++++++++++++++++++++++++++++++
+Código CIE-10:	
+++++++++++++++++++++++++++++++++++++++++++++++
+1-	  A020,		Enteritis debida a Salmonella
+2-	  A029,		Infección debida a Salmonella, no especificada
+3-	  A044,		Otras infecciones intestinales debidas a Escherichia coli
+4-		A048,		Otras infecciones intestinales bacterianas especificadas
+5-		A049,		Infección intestinal bacteriana, no especificada
+6-		A050,		Intoxicación alimentaria estafilocócica
+7-		A053,		Intoxicación alimentaria debida a Vibrio parahaemolyticus
+8-		A054,		Intoxicación alimentaria debida a Bacillus cereus
+9-		A059,		Intoxicación alimentaria bacteriana, no especificada
+10-		A080,		Enteritis debida a rotavirus
+11-		A081,		Gastroenteropatía aguda debida al agente de Norwalk
+12-		A083,		Otras enteritis virales
+13-		A09X,		Diarrea y gastroenteritis de presunto origen infeccioso
+14-	  T611,		Envenenamiento escombroideo por pescado
+15-		T612,		Otros envenenamientos por pescados y mariscos
+16-	  T619,		Efecto tóxico de alimentos marinos no especificados
+17-		T618,		Efecto tóxico de otros alimentos marinos
+18-		R69X,		Causas de morbilidad desconocidas y no especificadas
+19-		B75X,		Triquinosis
+20-		A085,		Otras infecciones intestinales especificadas
+21-		A084,		Enteritis viral SAI
+22-		A060,		Amebiasis intestinal SAI
+23-		A058,		Otras intoxicaciones alimentarias debidas a bacterias especificadas
+24-		A052,		Intoxicación alimentaria debida a Clostridium perfringens (Clostridium welchii)
+25-		A051,		Intoxicación alimentaria clásica debida a Clostridium botulinum
+26-		A045,		Enteritis debida a Campylobacter
+27-		A041,		Infección debida a Escherichia coli enterotoxígena
+28-		A040,		Infección debida a Escherichia coli enteropatógena
+29-		A039,		Disentería bacilar SAI
+30-		A033,		Shigelosis debida a Shigella sonnei
+31-		A031,		Shigelosis debida a Shigella Flexneri
+32-		A010,		Salmonelosis
+
+
+
