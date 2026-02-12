@@ -1,12 +1,25 @@
 # src/
 
-Este directorio contiene funciones en R utilizadas para el análisis estadístico
-de brotes alimentarios.
+This directory contains modular R functions used throughout the statistical analysis of foodborne outbreak data.
+The project follows a structured pipeline separating data handling, modeling, and evaluation into reusable components.
 
-## Archivos
-- load_data.R: carga y preparación inicial de datos
-- eda_univariate.R: análisis exploratorio univariado
-- eda_multivariate.R: análisis multivariado y correlaciones
-- glm_models.R: modelos GLM (Poisson)
-- regularized_models.R: LASSO y Ridge
-- pca_analysis.R: análisis de componentes principales
+## 📄 Files
+
+### load_data.R
+Functions for data loading and initial preprocessing.
+
+### eda_univariate.R
+Univariate exploratory data analysis, including descriptive statistics and distribution assessment of count variables.
+
+### glm_models.R
+Implementation of Generalized Linear Models (Poisson) for count data modeling.
+
+### regularized_models.R
+Cross-validated LASSO and Ridge regression models using glmnet, including reproducible fold definition and prediction utilities.
+
+### metrics.R
+Custom evaluation metrics for model comparison:
+
+- Mean Squared Error (MSE)
+- Mean Absolute Error (MAE)
+- Predictive R²
